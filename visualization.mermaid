@@ -1,0 +1,46 @@
+graph TD
+    A[Client] -->|HTTP Request| B[Istio Ingress Gateway]
+    subgraph "GKE Cluster with Cloud Service Mesh"
+        B --> C[Frontend Service]
+        C --> D[Product Catalog Service]
+        C --> E[Cart Service]
+        C --> F[Recommendation Service]
+        D --> G[Product Catalog DB]
+        E --> H[Redis Cart]
+        C --> I[Checkout Service]
+        I --> J[Payment Service]
+        I --> K[Shipping Service]
+        I --> L[Email Service]
+        I --> M[Currency Service]
+        F --> D
+        F --> N[Ad Service]
+    end
+    
+    subgraph "Google Cloud Operations"
+        O[Cloud Monitoring] --> P{Dashboard}
+        Q[Cloud Trace] --> P
+        R[Cloud Logging] --> P
+        S[SLO Monitoring] --> P
+    end
+    
+    B -.->|Telemetry| O
+    C -.->|Telemetry| O
+    D -.->|Telemetry| O
+    E -.->|Telemetry| O
+    F -.->|Telemetry| O
+    I -.->|Telemetry| O
+    J -.->|Telemetry| O
+    K -.->|Telemetry| O
+    L -.->|Telemetry| O
+    M -.->|Telemetry| O
+    N -.->|Telemetry| O
+
+    classDef normalService fill:#ddf,stroke:#aaf,stroke-width:1px;
+    classDef storage fill:#fdd,stroke:#faa,stroke-width:1px;
+    classDef mesh fill:#ffd,stroke:#fda,stroke-width:1px;
+    classDef observability fill:#dfd,stroke:#ada,stroke-width:1px;
+    
+    class C,D,E,F,I,J,K,L,M,N normalService;
+    class G,H storage;
+    class B mesh;
+    class O,Q,R,S,P observability;

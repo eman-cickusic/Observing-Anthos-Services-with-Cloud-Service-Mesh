@@ -1,0 +1,91 @@
+# enable-cloud-trace.yaml
+# This manifest enables Cloud Service Mesh to send telemetry to Cloud Trace
+apiVersion: telemetry.istio.io/v1alpha1
+kind: Telemetry
+metadata:
+  name: enable-cloud-trace
+  namespace: istio-system
+spec:
+  tracing:
+  - providers:
+    - name: stackdriver
+
+---
+# destinationrule.yaml
+# This defines how traffic is routed between service versions
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: productcatalogservice
+spec:
+  host: productcatalogservice
+  subsets:
+  - name: v1
+    labels:
+      version: v1
+  - name: v2
+    labels:
+      version: v2
+
+---
+# vs-split-traffic.yaml
+# This defines the traffic split between v1 and v2 of productcatalogservice
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: productcatalogservice
+spec:
+  hosts:
+  - productcatalogservice
+  http:
+  - route:
+    - destination:
+        host: productcatalogservice
+        subset: v1
+      weight: 75
+    - destination:
+        host: productcatalogservice
+        subset: v2
+      weight: 25
+
+---
+# productcatalog-v2.yaml
+# This deploys the high-latency version of the product catalog service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: productcatalogservice-v2
+spec:
+  selector:
+    matchLabels:
+      app: productcatalogservice
+      version: v2
+  template:
+    metadata:
+      labels:
+        app: productcatalogservice
+        version: v2
+    spec:
+      containers:
+      - name: server
+        image: gcr.io/google-samples/microservices-demo/productcatalogservice:v0.2.0
+        ports:
+        - containerPort: 3550
+        env:
+        - name: PORT
+          value: "3550"
+        - name: EXTRA_LATENCY
+          value: "3s"  # Artificial latency added for demonstration purposes
+        readinessProbe:
+          exec:
+            command: ["/bin/grpc_health_probe", "-addr=:3550"]
+        livenessProbe:
+          exec:
+            command: ["/bin/grpc_health_probe", "-addr=:3550"]
+        resources:
+          requests:
+            cpu: 100m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 128Mi

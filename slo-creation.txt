@@ -1,0 +1,34 @@
+# This is an example of what the SLO created through the UI would look like if defined in YAML
+# Note: SLOs are typically created through the Cloud Console UI as shown in the lab
+# This file is provided for reference and automation purposes
+
+apiVersion: monitoring.googleapis.com/v1
+kind: ServiceLevelObjective
+metadata:
+  name: gke-productcatalogservice-latency-slo
+spec:
+  # Service name must match the one visible in Cloud Service Mesh
+  service: productcatalogservice
+  displayName: "99.5% - Latency - Calendar day"
+  goal: 0.995
+  # Request-based SLO using latency as the SLI
+  serviceLevelIndicator:
+    requestBased:
+      goodTotalRatio:
+        # Define good requests as those with latency < 1000ms
+        goodServiceFilter: >
+          metric.type="istio.io/service/server/response_latencies" 
+          resource.type="k8s_container" 
+          resource.label."container_name"="productcatalogservice"
+          metric.label."response_code"!="500"
+          metric.label."response_code"!="503"
+          metric.label."response_code"!="504"
+          metric.label."response_code"!="429"
+          request_latency<=1000ms
+        totalServiceFilter: >
+          metric.type="istio.io/service/server/response_latencies" 
+          resource.type="k8s_container" 
+          resource.label."container_name"="productcatalogservice"
+  # Calendar day-aligned window
+  period:
+    calendarPeriod: DAY
